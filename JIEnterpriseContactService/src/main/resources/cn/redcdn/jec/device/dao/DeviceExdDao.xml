@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.device.dao.DeviceExdDao">
+    <select id="queryAllNube" resultType="java.lang.String">
+        SELECT nube
+        FROM
+            device
+    </select>
+
+    <insert id="insertBatch" parameterType="cn.redcdn.jec.common.entity.Device">
+        INSERT INTO
+        device (
+        id,
+        group_id,
+        name,
+        account,
+        account_type,
+        nube,
+        first_group,
+        second_group,
+        third_group,
+        control_flg,
+        control_nube,
+        importer,
+        creator,
+        create_time,
+        update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id},
+            #{item.groupId},
+            #{item.name},
+            #{item.account},
+            #{item.accountType},
+            #{item.nube},
+            #{item.firstGroup},
+            #{item.secondGroup},
+            #{item.thirdGroup},
+            #{item.controlFlg},
+            #{item.controlNube},
+            #{item.importer},
+            #{item.creator},
+            #{item.createTime},
+            #{item.updateTime})
+        </foreach>
+    </insert>
+
+    <select id="getDeviceListWithPage" resultType="cn.redcdn.jec.device.dto.DeviceListDto">
+        SELECT
+        device.id,
+        device.name,
+        account,
+        nube,
+        first_group AS firstGroup,
+        second_group AS secondGroup,
+        third_group AS thirdGroup,
+        control_flg AS controlFlg
+        FROM
+        device
+        LEFT JOIN
+        group_info tg
+        ON device.group_id = tg.id
+        LEFT JOIN
+        group_info sg
+        ON tg.parent_id = sg.id
+        LEFT JOIN
+        group_info fg
+        ON sg.parent_id = fg.id
+        <where>
+            device.importer = #{importer}
+            AND
+            <choose>
+                <when test="searchType == null or searchType == '0'.toString() or searchType == ''.toString()">
+                    1 = 1
+                </when>
+                <when test=" searchType == '1'.toString()">
+                    device.name LIKE concat(concat('%',#{content}),'%')
+                </when>
+                <when test=" searchType == '2'.toString()">
+                    device.nube LIKE concat(concat('%',#{content}),'%')
+                </when>
+                <when test=" searchType == '3'.toString()">
+                    (device.first_group LIKE concat(concat('%',#{content}),'%')
+                    OR
+                    device.second_group LIKE concat(concat('%',#{content}),'%')
+                    OR
+                    device.third_group LIKE concat(concat('%',#{content}),'%'))
+                </when>
+                <otherwise>
+                    <![CDATA[  1 <> 1   ]]>
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY
+        fg.level, fg.sort, sg.level, sg.sort, tg.level, tg.sort
+    </select>
+    <select id="getDeviceListWitOrgWithPage" resultType="cn.redcdn.jec.device.dto.DeviceListDto">
+        SELECT
+        device.id,
+        device.name,
+        account,
+        nube,
+        first_group AS firstGroup,
+        second_group AS secondGroup,
+        third_group AS thirdGroup,
+        control_flg AS controlFlg
+        FROM
+        device
+        JOIN
+        ((SELECT
+        g1.id,g1.level,g1.sort
+        FROM group_info g1
+        WHERE g1.id = #{groupId})
+        UNION
+        (SELECT
+        g2.id,g2.level,g2.sort
+        FROM group_info g1 LEFT JOIN group_info g2 ON g1.id = g2.parent_id
+        WHERE g1.id = #{groupId})
+        UNION (
+        SELECT
+        g3.id,g3.level,g3.level
+        FROM group_info g1 LEFT JOIN group_info g2 ON g1.id = g2.parent_id
+        LEFT JOIN group_info g3 ON g2.id = g3.parent_id
+        WHERE g1.id = #{groupId})) g
+        on device.group_id=g.id
+        <where>
+            <choose>
+                <when test="searchType == null or searchType == '0'.toString() or searchType == ''.toString()">
+                    1 = 1
+                </when>
+                <when test=" searchType == '1'.toString()">
+                    device.name LIKE concat(concat('%',#{content}),'%')
+                </when>
+                <when test=" searchType == '2'.toString()">
+                    device.nube LIKE concat(concat('%',#{content}),'%')
+                </when>
+                <when test=" searchType == '3'.toString()">
+                    (device.first_group LIKE concat(concat('%',#{content}),'%')
+                    OR
+                    device.second_group LIKE concat(concat('%',#{content}),'%')
+                    OR
+                    device.third_group LIKE concat(concat('%',#{content}),'%'))
+                </when>
+                <otherwise>
+                    <![CDATA[  1 <> 1   ]]>
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY
+        g.level, g.sort
+    </select>
+    <delete id="deleteBatch">
+        DELETE FROM
+        device
+        <where>
+            importer = #{importer}
+            AND
+            id IN
+            <foreach collection="list" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </where>
+    </delete>
+
+    <select id="getControlListWithPage" resultType="cn.redcdn.jec.device.dto.DeviceListDto">
+        SELECT
+        id,
+        name,
+        account,
+        nube,
+        first_group AS firstGroup,
+        second_group AS secondGroup,
+        third_group AS thirdGroup,
+        control_flg AS controlFlg
+        FROM
+        device
+        <where>
+            control_flg = 2
+            AND
+            importer = #{importer}
+            AND
+            <choose>
+                <when test="searchType == null or searchType == '0'.toString() or searchType == ''.toString()">
+                    1 = 1
+                </when>
+                <when test=" searchType == '1'.toString()">
+                    name LIKE concat(concat('%',#{content}),'%')
+                </when>
+                <when test=" searchType == '2'.toString()">
+                    nube LIKE concat(concat('%',#{content}),'%')
+                </when>
+                <when test=" searchType == '3'.toString()">
+                    (first_group LIKE concat(concat('%',#{content}),'%')
+                    OR
+                    second_group LIKE concat(concat('%',#{content}),'%')
+                    OR
+                    third_group LIKE concat(concat('%',#{content}),'%'))
+                </when>
+                <otherwise>
+                    <![CDATA[  1 <> 1   ]]>
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY
+        update_time desc
+    </select>
+
+    <select id="getControlListWithOrgWithPage" resultType="cn.redcdn.jec.device.dto.DeviceListDto">
+        SELECT
+        device.id,
+        name,
+        account,
+        nube,
+        first_group AS firstGroup,
+        second_group AS secondGroup,
+        third_group AS thirdGroup,
+        control_flg AS controlFlg
+        FROM
+        device
+        JOIN
+        ((SELECT
+        g1.id
+        FROM group_info g1
+        WHERE g1.id = #{groupId})
+        UNION
+        (SELECT
+        g2.id
+        FROM group_info g1 LEFT JOIN group_info g2 ON g1.id = g2.parent_id
+        WHERE g1.id = #{groupId})
+        UNION (
+        SELECT
+        g3.id
+        FROM group_info g1 LEFT JOIN group_info g2 ON g1.id = g2.parent_id
+        LEFT JOIN group_info g3 ON g2.id = g3.parent_id
+        WHERE g1.id = #{groupId})) g
+        on device.group_id=g.id
+        <where>
+            control_flg = 2
+            AND
+            <choose>
+                <when test="searchType == null or searchType == '0'.toString() or searchType == ''.toString()">
+                    1 = 1
+                </when>
+                <when test=" searchType == '1'.toString()">
+                    name LIKE concat(concat('%',#{content}),'%')
+                </when>
+                <when test=" searchType == '2'.toString()">
+                    nube LIKE concat(concat('%',#{content}),'%')
+                </when>
+                <when test=" searchType == '3'.toString()">
+                    (first_group LIKE concat(concat('%',#{content}),'%')
+                    OR
+                    second_group LIKE concat(concat('%',#{content}),'%')
+                    OR
+                    third_group LIKE concat(concat('%',#{content}),'%'))
+                </when>
+                <otherwise>
+                    <![CDATA[  1 <> 1   ]]>
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY
+        update_time desc
+    </select>
+
+    <select id="queryByGroupIds" resultMap="cn.redcdn.jec.common.dao.DeviceDao.deviceMap">
+        SELECT
+        *
+        FROM
+        device
+        <where>
+            group_id IN
+            <foreach collection="list" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </where>
+    </select>
+
+    <select id="getContactListWithPage" resultType="cn.redcdn.jec.group.dto.ContactInfoDto">
+        SELECT
+        id,
+        name,
+        account,
+        nube,
+        control_flg AS controlFlg
+        FROM
+        device
+        <where>
+            importer = #{importer}
+            AND
+            group_id = #{groupId}
+            <if test="content != null and content != ''">
+                AND
+                (name LIKE concat(concat('%',#{content}),'%')
+                OR
+                nube LIKE concat(concat('%',#{content}),'%'))
+            </if>
+        </where>
+        ORDER BY
+        account_type asc, control_flg desc
+    </select>
+
+    <select id="queryAll" resultMap="cn.redcdn.jec.common.dao.DeviceDao.deviceMap">
+        SELECT *
+        FROM
+            device
+    </select>
+
+    <update id="updateByNubeBatch">
+        <foreach collection="list" item="item" separator=";">
+            Update
+            device
+            <set>
+                <if test=" item.name != null ">
+                    name = #{item.name},
+                </if>
+                <if test=" item.createTime != null ">
+                    create_time = #{item.createTime},
+                </if>
+                <if test=" item.updateTime != null ">
+                    update_time = #{item.updateTime}
+                </if>
+            </set>
+            <where>
+                nube = #{item.nube}
+            </where>
+        </foreach>
+    </update>
+
+    <update id="updateByGroupIdBatch">
+        <foreach collection="list" item="item" separator=";">
+            Update
+            device
+            <set>
+                <if test=" level == 1 ">
+                    first_group = #{name},
+                </if>
+                <if test=" level == 2 ">
+                    second_group = #{name},
+                </if>
+                <if test=" level == 3 ">
+                    third_group = #{name},
+                </if>
+            </set>
+            <where>
+                group_id = #{item}
+            </where>
+        </foreach>
+    </update>
+
+    <update id="updateUpgradeBatch">
+        <foreach collection="list" item="item" separator=";">
+            Update
+            device
+            <set>
+                <if test=" category == 1 ">
+                    first_group = second_group,
+                </if>
+                second_group = IFNULL(third_group, ''),
+                third_group = ''
+            </set>
+            <where>
+                group_id = #{item}
+            </where>
+        </foreach>
+    </update>
+
+    <select id="queryAllByImporter" resultMap="cn.redcdn.jec.common.dao.DeviceDao.deviceMap">
+        SELECT
+        *
+        FROM
+        device
+        <where>
+            importer = #{importer}
+        </where>
+        ORDER BY group_id
+    </select>
+</mapper>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.common.dao.EntContactDao">
+    <resultMap type="cn.redcdn.jec.common.entity.EntContact" id="entContactMap">
+        <!-- ID -->
+        <id column="id" property="id"/>
+        <!-- 中控用户ID -->
+        <result column="device_id" property="deviceId"/>
+        <!-- 中控用户通讯录组ID -->
+        <result column="contact_group_id" property="contactGroupId"/>
+        <!-- 创建者 -->
+        <result column="creator" property="creator"/>
+        <!-- 创建时间 -->
+        <result column="create_time" property="createTime"/>
+        <!-- 更新时间 -->
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 将数据插入数据库中 -->
+    <insert id="insert" parameterType="cn.redcdn.jec.common.entity.EntContact">
+        INSERT INTO
+        ent_contact (
+            id,
+            device_id,
+            contact_group_id,
+            creator,
+            create_time,
+            update_time) 
+        VALUES (
+            #{id},
+            #{deviceId},
+            #{contactGroupId},
+            #{creator},
+            #{createTime},
+            #{updateTime}) 
+    </insert>
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="queryByKey" resultMap="entContactMap">
+        SELECT
+            * 
+        FROM 
+            ent_contact 
+        <where>
+            id = #{id} 
+        </where>
+    </select>
+
+    <!-- 根据key更新数据库中信息 -->
+    <update id="updateByKey">
+        Update
+            ent_contact
+        <set>
+            <if test = " deviceId != null ">
+                device_id = #{deviceId},
+            </if>
+            <if test = " contactGroupId != null ">
+                contact_group_id = #{contactGroupId},
+            </if>
+            <if test = " creator != null ">
+                creator = #{creator},
+            </if>
+            <if test = " createTime != null ">
+                create_time = #{createTime},
+            </if>
+            <if test = " updateTime != null ">
+                update_time = #{updateTime}
+            </if>
+        </set>
+        <where>
+            id = #{id} 
+        </where>
+    </update>
+
+    <!-- 根据Key删除数据库中信息 -->
+    <delete id="deleteByKey">
+        DELETE FROM
+            ent_contact 
+        <where>
+            id = #{id} 
+        </where>
+    </delete>
+    <!-- 根据field查找数据库中信息 -->
+    <select id="queryByField" resultMap="entContactMap">
+        SELECT
+            * 
+        FROM 
+            ent_contact 
+        <where>
+               ${fieldName} = #{fieldValue} 
+        </where>
+    </select>
+
+</mapper>

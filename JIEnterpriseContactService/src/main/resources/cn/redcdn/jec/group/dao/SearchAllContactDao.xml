@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.group.dao.SearchAllContactDao">
+
+	<!-- 根据key查找数据库中信息 -->
+	<select id="listGroupByContent" resultType="cn.redcdn.jec.contact.dto.GroupSearchDto">
+		SELECT
+		    tg.id as groupId,
+		    tg.name as groupName
+		FROM
+		    group_info tg
+		<where>
+		    tg.name LIKE concat(concat('%',#{content}),'%')
+		AND 
+		    tg.importer = #{importer} 
+		</where> 
+		ORDER BY tg.sort
+	</select>
+
+	<!-- 根据key查找数据库中信息 -->
+	<select id="listDeviceByContent" resultType="cn.redcdn.jec.contact.dto.DeviceSearchDto">
+		SELECT 
+		    g.id gid,
+			g.name gname,
+			device.id cid,
+			device.name cname 
+	    FROM 
+	        group_info g 
+	    JOIN 
+	        device 
+	    ON g.id = device.group_id 
+	    <where>
+	    (device.name LIKE concat(concat('%',#{content}),'%')
+		OR device.nube LIKE concat(concat('%',#{content}),'%'))
+		AND g.importer = #{importer} 
+		AND device.importer = #{importer} 
+	    </where>
+		ORDER BY
+		g.sort,
+		g.id
+	</select>
+
+</mapper>
