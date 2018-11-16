@@ -1,0 +1,26 @@
+2018-04-17 17:51:38:342-[main] INFO  JIEnterpriseContactServiceApplication- Starting JIEnterpriseContactServiceApplication on zhangmy with PID 12480 (C:\P4V\workspace\005_Medical\web\src\JIEnterpriseContactService\target\classes started by zhang in C:\P4V\workspace\005_Medical\web\src\JIEnterpriseContactService)
+2018-04-17 17:51:38:345-[main] INFO  JIEnterpriseContactServiceApplication- No active profile set, falling back to default profiles: default
+2018-04-17 17:51:40:311-[background-preinit] INFO  Version- HV000001: Hibernate Validator 5.3.5.Final
+2018-04-17 17:51:43:197-[main] INFO  StandardService- Starting service Tomcat
+2018-04-17 17:51:43:199-[main] INFO  StandardEngine- Starting Servlet Engine: Apache Tomcat/8.5.14
+2018-04-17 17:51:43:451-[localhost-startStop-1] INFO  [/jec]- Initializing Spring embedded WebApplicationContext
+2018-04-17 17:51:46:321-[main] INFO  Http11NioProtocol- Initializing ProtocolHandler ["http-nio-80"]
+2018-04-17 17:51:46:362-[main] INFO  Http11NioProtocol- Starting ProtocolHandler ["http-nio-80"]
+2018-04-17 17:51:46:428-[main] INFO  NioSelectorPool- Using a shared selector for servlet write/read
+2018-04-17 17:51:46:490-[main] INFO  JIEnterpriseContactServiceApplication- Started JIEnterpriseContactServiceApplication in 9.128 seconds (JVM running for 10.617)
+2018-04-17 17:53:25:987-[http-nio-80-exec-1] INFO  [/jec]- Initializing Spring FrameworkServlet 'dispatcherServlet'
+2018-04-17 17:53:26:081-[http-nio-80-exec-1] INFO  ExternalController- request(64c3e4ab847a4c3da4a3ecacaa28e342):path=/admin/login, params={"account":"admin","password":"adminpwd"}
+2018-04-17 17:53:27:252-[http-nio-80-exec-1] INFO  ExternalController- totalExeTime:1088 response(64c3e4ab847a4c3da4a3ecacaa28e342):{"code":-999,"data":null,"msg":"系统错误"}
+2018-04-17 17:56:41:150-[main] INFO  JIEnterpriseContactServiceApplication- Starting JIEnterpriseContactServiceApplication on zhangmy with PID 4820 (C:\P4V\workspace\005_Medical\web\src\JIEnterpriseContactService\target\classes started by zhang in C:\P4V\workspace\005_Medical\web\src\JIEnterpriseContactService)
+2018-04-17 17:56:41:154-[main] INFO  JIEnterpriseContactServiceApplication- No active profile set, falling back to default profiles: default
+2018-04-17 17:56:41:951-[background-preinit] INFO  Version- HV000001: Hibernate Validator 5.3.5.Final
+2018-04-17 17:56:44:220-[main] INFO  StandardService- Starting service Tomcat
+2018-04-17 17:56:44:222-[main] INFO  StandardEngine- Starting Servlet Engine: Apache Tomcat/8.5.14
+2018-04-17 17:56:44:415-[localhost-startStop-1] INFO  [/jec]- Initializing Spring embedded WebApplicationContext
+2018-04-17 17:56:46:733-[main] INFO  Http11NioProtocol- Initializing ProtocolHandler ["http-nio-80"]
+2018-04-17 17:56:46:751-[main] INFO  Http11NioProtocol- Starting ProtocolHandler ["http-nio-80"]
+2018-04-17 17:56:46:771-[main] INFO  NioSelectorPool- Using a shared selector for servlet write/read
+2018-04-17 17:56:46:807-[main] INFO  JIEnterpriseContactServiceApplication- Started JIEnterpriseContactServiceApplication in 6.031 seconds (JVM running for 6.652)
+2018-04-17 17:56:50:781-[http-nio-80-exec-1] INFO  [/jec]- Initializing Spring FrameworkServlet 'dispatcherServlet'
+2018-04-17 17:56:50:859-[http-nio-80-exec-1] INFO  ExternalController- request(b65bcc66690449e98c818576e4104e26):path=/admin/login, params={"account":"admin","password":"adminpwd"}
+2018-04-17 17:56:51:628-[http-nio-80-exec-1] INFO  ExternalController- totalExeTime:715 response(b65bcc66690449e98c818576e4104e26):{"code":0,"data":{"token":"fa74eb50bc5849648d0f1961ed02d555_null"},"msg":"成功"}

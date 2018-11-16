@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.common.dao.ContactCommonDao">
+    
+    <!-- 根据key查找数据库中信息 -->
+    <select id="countContactsByNube" resultType="java.lang.Integer">
+        SELECT
+        	count(1)
+        FROM
+          ent_contact ec
+        WHERE 
+          EXISTS(
+          	SELECT
+          		1
+            FROM
+            	device cd
+            WHERE
+               cd.nube = #{nube} and cd.id = ec.device_id
+          )
+    </select>
+    
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listGroupByNube" resultType="cn.redcdn.jec.common.dto.ContactDetailDto">
+     	SELECT
+	     	fg.id as fid,
+	     	fg.name as fname,
+	     	sg.id as sid,
+	     	sg.name as sname,
+	     	tmp.id as tid,
+	     	tmp.name as tname,
+	     	tmp.level  as tlevel  	
+     	FROM
+     	(
+	        SELECT 	           
+	        	g.id,
+	        	g.name,
+	        	g.parent_id,
+	        	g.level,
+	        	g.sort
+	        FROM 
+	            group_info g
+	        WHERE
+	        EXISTS(
+		        SELECT
+		        	1
+		        FROM	        
+		            ent_contact ec,
+		            device ud
+		        WHERE
+		        	ud.nube = #{nube} 
+		       	AND ud.control_flg = 2
+		        AND ec.device_id = ud.id
+	            AND ec.contact_group_id = g.id)
+	    ) tmp
+	    left join group_info sg on tmp.parent_id = sg.id
+	    left join group_info fg on sg.parent_id = fg.id	    
+        ORDER BY
+            tmp.level,tmp.sort
+    </select>
+    
+     <!-- 根据key查找数据库中信息 -->
+    <select id="listGroupDefaultByNube" resultType="cn.redcdn.jec.common.dto.ContactDetailDto">
+     	SELECT
+	     	fg.id as fid,
+	     	fg.name as fname,
+	     	sg.id as sid,
+	     	sg.name as sname,
+	     	tmp.id as tid,
+	     	tmp.name as tname,
+	     	tmp.level  as tlevel  	
+     	FROM
+     	(
+	        SELECT 
+	        	tg.id,
+	        	tg.name,
+	        	tg.parent_id,
+	        	tg.level,
+	        	tg.sort
+	        FROM 
+	            group_info tg
+	        WHERE
+	        EXISTS(
+		        SELECT
+		       	 1
+		        FROM	
+		            device ud
+		        WHERE
+		        	ud.nube = #{nube} 
+		       	AND ud.control_flg = 2
+		        AND ((ud.group_id = tg.id) 
+		        	OR ( SELECT
+		        	         1
+		        	     FROM 
+		                     group_info sg
+		                 WHERE
+		                 	 ud.group_id = sg.id
+		                 AND tg.parent_id = sg.id)
+		         OR ( SELECT
+		        	         1
+		        	     FROM 
+		                     group_info fg,
+		                     group_info sg
+		                 WHERE
+		                 	 ud.group_id = fg.id
+		                 AND sg.parent_id = fg.id
+		                 AND tg.parent_id = sg.id)))
+	    ) tmp
+	    left join group_info sg on tmp.parent_id = sg.id
+	    left join group_info fg on sg.parent_id = fg.id	    
+        ORDER BY
+            tmp.level,tmp.sort
+    </select>
+</mapper>

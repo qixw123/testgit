@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.group.dao.GroupExtendDao">
+	<select id="queryAll" resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+		SELECT
+		    *
+		FROM
+		    group_info
+		WHERE
+            importer =  #{importer}
+		ORDER BY
+		    level
+	</select>
+
+	<insert id="insertBatch" parameterType="cn.redcdn.jec.common.entity.GroupInfo">
+		INSERT INTO
+		group_info (
+		id,
+		name,
+		level,
+		parent_id,
+		sort,
+		importer,
+		creator,
+		create_time,
+		update_time)
+		VALUES
+		<foreach collection="list" item="item" separator=",">
+			(#{item.id},
+			#{item.name},
+			#{item.level},
+			#{item.parentId},
+			#{item.sort},
+			#{item.importer},
+			#{item.creator},
+			#{item.createTime},
+			#{item.updateTime})
+		</foreach>
+	</insert>
+
+	<select id="queryByNameLevelParent" resultType="java.lang.String">
+		SELECT
+		id
+		FROM
+		group_info
+		<where>
+			name = #{name} 
+			AND
+			level = #{level} 
+			AND 
+			importer =  #{importer} 
+			<if test=" parentId != null and parentId !=''">
+				AND parent_id = #{parentId}
+			</if>
+		</where>
+	</select>
+	
+	<select id="queryByLevelParent" resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+		SELECT
+		    * 
+		FROM
+		group_info
+		<where>
+			level = #{level} 
+			AND 
+			importer =  #{importer} 
+			<if test=" parentId != null and parentId !=''">
+				AND parent_id = #{parentId}
+			</if>
+		</where>
+	</select>
+	
+	<select id="querySiblingName" resultType="java.lang.String">
+		SELECT
+		    name 
+		FROM
+		    group_info 
+		<where>
+			<choose>
+			     <when test="parentId != null and parentId != ''">
+			         parent_id = #{parentId}
+			     </when>
+			     <otherwise>
+			         level = 1
+			     </otherwise>
+			</choose>
+			AND 
+			    importer =  #{importer} 
+			AND 
+			    id != #{id}
+		</where>
+	</select>
+	
+	<select id="queryChildren" resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+		SELECT
+		    * 
+		FROM
+		group_info
+		<where>
+			parent_id = #{parentId}
+		</where>
+	</select>
+	
+	<delete id="deleteBatch">
+	    DELETE FROM
+		    group_info
+		<where>
+			id IN 
+			<foreach collection="list" item="item" separator="," open="(" close=")">
+				#{item}
+			</foreach>
+		</where>
+	</delete>
+	
+	<select id="getGrandParent" resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+		SELECT 
+		    a.* 
+	    FROM 
+	        group_info a 
+	    JOIN 
+	        group_info b 
+	    ON 
+	        a.id = b.parent_id 
+	    JOIN 
+	        group_info c 
+	    ON 
+	        b.id = c.parent_id 
+	    <where>
+	        c.id = #{id}
+	    </where>
+	</select>
+	
+	<update id="updateBatch">
+    	<foreach collection="list" item="item" separator=";">
+    	Update
+            group_info
+        <set>
+            <if test = " item.name != null ">
+                name = #{item.name},
+            </if>
+            <if test = " item.level != null ">
+                level = #{item.level},
+            </if>
+            <if test = " item.parentId != null ">
+                parent_id = #{item.parentId},
+            </if>
+            <if test = " item.sort != null ">
+                sort = #{item.sort},
+            </if>
+            <if test = " item.importer != null ">
+                importer = #{item.importer},
+            </if>
+            <if test = " item.creator != null ">
+                creator = #{item.creator},
+            </if>
+            <if test = " item.createTime != null ">
+                create_time = #{item.createTime},
+            </if>
+            <if test = " item.updateTime != null ">
+                update_time = #{item.updateTime}
+            </if>
+        </set>
+        <where>
+            id = #{item.id} 
+        </where>
+    	</foreach>
+    </update>
+    
+    <select id="queryAllPosterity" resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+		SELECT 
+		    c.* 
+	    FROM 
+	        group_info a 
+	    JOIN 
+	        group_info b 
+	    ON 
+	        a.id = b.parent_id 
+	    JOIN 
+	        group_info c 
+	    ON 
+	        b.id = c.parent_id 
+	    <where>
+	        a.id = #{id}
+	    </where>
+        UNION 
+        SELECT
+		    *
+		FROM
+		    group_info
+		<where>
+			parent_id = #{id}
+		</where>
+	</select>
+	
+	<select id="queryByContactDeviceId" resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+		SELECT 
+		    ginfo.* 
+		FROM 
+		    ent_contact contact 
+		JOIN 
+		    group_info ginfo 
+		ON 
+		    contact.contact_group_id = ginfo.id 
+	    <where>
+	        contact.device_id = #{id}
+	    </where>
+		ORDER BY ginfo.level ASC 
+	</select>
+    
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listAllGroup"  resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+        SELECT 
+           tg.*
+        FROM 
+            group_info  tg
+		LEFT JOIN
+		group_info sg
+		ON tg.parent_id = sg.id 
+		LEFT JOIN
+		group_info fg
+		ON sg.parent_id = fg.id 
+        WHERE
+            tg.importer =  #{account} 
+		ORDER BY
+		fg.level, fg.sort, sg.level, sg.sort, tg.level, tg.sort
+    </select>
+	
+	<select id="queryFirstChildren"  resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+		SELECT
+	    *
+		FROM
+		group_info
+		<where>
+				level = 1 
+			AND importer =  #{importer} 
+		</where>
+	</select>
+</mapper>
+	

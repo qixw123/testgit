@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.device.dao.DeviceExtendDao">
+
+   <!-- 根据key查找数据库中信息 -->
+    <select id="queryAllByNube" resultMap="cn.redcdn.jec.common.dao.DeviceDao.deviceMap">
+        SELECT
+            id,
+            group_id,
+            name,
+            nube 
+        FROM 
+            device cd
+        <where>
+            EXISTS
+        (
+            SELECT 
+            	1
+            FROM 
+                ent_contact ec,
+                device ud
+            WHERE
+            	ud.nube = #{nube} 
+        	AND ud.control_flg = 2
+            AND ec.device_id = ud.id
+            AND ec.contact_group_id = cd.group_id
+         )
+         ORDER BY
+         	cd.group_id
+        </where>
+    </select>
+    
+    <!-- 根据key查找数据库中信息 -->
+    <select id="queryDeaultByNube" resultMap="cn.redcdn.jec.common.dao.DeviceDao.deviceMap">
+        SELECT
+            id,
+            group_id,
+            name,
+            nube 
+        FROM 
+            device cd
+        WHERE
+            EXISTS
+        (
+            SELECT 
+            	1
+            FROM 
+                device ud
+            WHERE
+            	ud.nube = #{nube} 
+        	AND ud.control_flg = 2
+            AND ud.group_id = cd.group_id
+         )
+         UNION ALL
+         SELECT
+            id,
+            group_id,
+            name,
+            nube 
+        FROM 
+            device cd
+        WHERE
+            EXISTS
+        (
+            SELECT 
+            	1
+            FROM 
+                device ud, group_info tg
+            WHERE
+            	ud.nube = #{nube} 
+        	AND ud.control_flg = 2
+            AND ud.group_id = tg.parent_id
+            AND tg.id = cd.group_id
+         )
+         UNION ALL
+         SELECT
+            id,
+            group_id,
+            name,
+            nube 
+        FROM 
+            device cd
+        WHERE
+            EXISTS
+        (
+             SELECT 
+            	1
+            FROM 
+                device ud, group_info tg, group_info sg
+            WHERE
+            	ud.nube = #{nube} 
+        	AND ud.control_flg = 2
+            AND ud.group_id = sg.parent_id
+            AND sg.id = tg.parent_id
+            AND tg.id = cd.group_id
+         )
+         ORDER BY
+         	group_id
+    </select>
+    
+     <!-- 根据key查找数据库中信息 -->
+    <select id="queryByNube" resultMap="cn.redcdn.jec.common.dao.DeviceDao.deviceMap">
+        SELECT
+            * 
+        FROM 
+            device 
+        <where>
+            nube = #{nube} 
+         AND control_flg = 2
+        </where>
+    </select>
+    
+      <!-- 根据key查找数据库中信息 -->
+    <select id="queryByNubeAndGroupId" resultType="cn.redcdn.jec.group.dto.ContactDto">
+        SELECT
+            id,
+            name,
+            nube
+        FROM 
+            device cd
+        <where>
+        EXISTS
+        (
+            SELECT 
+            	1
+            FROM 
+                ent_contact ec,
+                device ud
+            WHERE
+            	ud.nube = #{nube} 
+        	AND ud.control_flg = 2
+            AND ec.device_id = ud.id
+            AND ec.contact_group_id = cd.group_id
+         )
+         AND
+         	cd.group_id =  #{groupId}
+         ORDER BY
+            cd.update_time desc
+        </where>
+    </select>
+    
+      <!-- 根据key查找数据库中信息 -->
+    <select id="getFirstSumByNubeAndGroupId" resultType="cn.redcdn.jec.group.dto.ChildContactDto">
+        SELECT
+           g.id,
+           g.name,
+           SUM(tmp.num) as num
+        FROM
+        	group_info g,
+        (
+        <!-- 查询三级组织下算到二级用户汇总用户 -->
+	        SELECT
+	            sg.id as group_id,
+	            count(1) as num
+	        FROM 
+	            device cd,
+        		group_info tg,
+        		group_info sg
+	        <where>
+	        	cd.group_id = tg.id
+	        AND tg.parent_id = sg.id
+	        AND sg.parent_id = #{groupId} 
+	        AND EXISTS
+	        (
+	            SELECT 
+	            	1
+	            FROM 
+	                ent_contact ec,
+	                device ud
+	            WHERE
+	            	ud.nube = #{nube} 
+	        	AND ud.control_flg = 2
+	            AND ec.device_id = ud.id
+                AND ec.contact_group_id = cd.group_id
+	         )
+       		</where>
+	         GROUP BY 
+	         	sg.id
+	        UNION ALL
+	        <!-- 查询二级直属用户 -->
+	        SELECT
+	            sg.id as group_id,
+	            count(1) as num
+	        FROM 
+	            device cd,
+        		group_info sg
+	        <where>
+	        	cd.group_id = sg.id
+	        AND sg.parent_id =  #{groupId}
+	        AND EXISTS
+	        (
+	            SELECT 
+	            	1
+	            FROM 
+	                ent_contact ec,
+	                device ud
+	            WHERE
+	            	ud.nube = #{nube} 
+	        	AND ud.control_flg = 2
+	            AND ec.device_id = ud.id
+                AND ec.contact_group_id = cd.group_id
+	         )
+       		</where>
+	         GROUP BY 
+	         	sg.id
+	     ) tmp
+	     WHERE
+	     	g.id = tmp.group_id
+	     GROUP BY 
+	         	g.id
+         ORDER BY
+            g.sort
+    </select>
+    
+    <!-- 根据key查找数据库中信息 -->
+    <select id="getSecondSumByNubeAndGroupId" resultType="cn.redcdn.jec.group.dto.ChildContactDto">
+         SELECT
+           g.id,
+           g.name,
+           SUM(tmp.num) as num
+        FROM
+        	group_info g,
+        (
+        <!-- 查询三级组织下用户 -->
+	        SELECT
+	            tg.id as group_id,
+	            count(1) as num
+	        FROM 
+	            device cd,
+        		group_info tg
+	        <where>
+	        	cd.group_id = tg.id
+	        AND tg.parent_id = #{groupId}
+	        AND EXISTS
+	        (
+	            SELECT 
+	            	1
+	            FROM 
+	                ent_contact ec,
+	                device ud
+	            WHERE
+	            	ud.nube = #{nube} 
+	        	AND ud.control_flg = 2
+	            AND ec.device_id = ud.id
+                AND ec.contact_group_id = cd.group_id
+	         )
+       		</where>
+	         GROUP BY 
+	         	tg.id
+	     ) tmp
+	     WHERE
+	     	g.id = tmp.group_id
+	     GROUP BY 
+	         	g.id
+         ORDER BY
+            g.sort
+    </select>
+    
+</mapper>

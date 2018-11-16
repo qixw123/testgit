@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.common.dao.OrganizeAccountDao">
+    <resultMap type="cn.redcdn.jec.common.entity.OrganizeAccount" id="organizeAccountMap">
+        <!-- UUID -->
+        <id column="id" property="id"/>
+        <!-- 机构帐号 -->
+        <result column="account" property="account"/>
+        <!-- 密码 -->
+        <result column="password" property="password"/>
+        <!-- 所属组织id -->
+        <result column="contact_group_id" property="contactGroupId"/>
+        <!-- 一级组织名称 -->
+        <result column="first_group" property="firstGroup"/>
+        <!-- 二级组织名称 -->
+        <result column="second_group" property="secondGroup"/>
+        <!-- 三级组织名称 -->
+        <result column="third_group" property="thirdGroup"/>
+        <!-- 管理员帐号 -->
+        <result column="importer" property="importer"/>
+        <!-- 创建者 -->
+        <result column="creator" property="creator"/>
+        <!-- 创建时间 -->
+        <result column="create_time" property="createTime"/>
+        <!-- 修改时间 -->
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 将数据插入数据库中 -->
+    <insert id="insert" parameterType="cn.redcdn.jec.common.entity.OrganizeAccount">
+        INSERT INTO
+        organize_account (
+            id,
+            account,
+            password,
+            contact_group_id,
+            first_group,
+            second_group,
+            third_group,
+            importer,
+            creator,
+            create_time,
+            update_time) 
+        VALUES (
+            #{id},
+            #{account},
+            #{password},
+            #{contactGroupId},
+            #{firstGroup},
+            #{secondGroup},
+            #{thirdGroup},
+            #{importer},
+            #{creator},
+            #{createTime},
+            #{updateTime}) 
+    </insert>
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="queryByKey" resultMap="organizeAccountMap">
+        SELECT
+            * 
+        FROM 
+            organize_account 
+        <where>
+            id = #{id} 
+        </where>
+    </select>
+
+    <!-- 根据key更新数据库中信息 -->
+    <update id="updateByKey">
+        Update
+            organize_account
+        <set>
+            <if test = " account != null ">
+                account = #{account},
+            </if>
+            <if test = " password != null ">
+                password = #{password},
+            </if>
+            <if test = " contactGroupId != null ">
+                contact_group_id = #{contactGroupId},
+            </if>
+            <if test = " firstGroup != null ">
+                first_group = #{firstGroup},
+            </if>
+            <if test = " secondGroup != null ">
+                second_group = #{secondGroup},
+            </if>
+            <if test = " thirdGroup != null ">
+                third_group = #{thirdGroup},
+            </if>
+            <if test = " importer != null ">
+                importer = #{importer},
+            </if>
+            <if test = " creator != null ">
+                creator = #{creator},
+            </if>
+            <if test = " createTime != null ">
+                create_time = #{createTime},
+            </if>
+            <if test = " updateTime != null ">
+                update_time = #{updateTime}
+            </if>
+        </set>
+        <where>
+            id = #{id} 
+        </where>
+    </update>
+
+    <!-- 根据Key删除数据库中信息 -->
+    <delete id="deleteByKey">
+        DELETE FROM
+            organize_account 
+        <where>
+            id = #{id} 
+        </where>
+    </delete>
+    <!-- 根据field查找数据库中信息 -->
+    <select id="queryByField" resultMap="organizeAccountMap">
+        SELECT
+            * 
+        FROM 
+            organize_account 
+        <where>
+               ${fieldName} = #{fieldValue} 
+        </where>
+    </select>
+
+</mapper>

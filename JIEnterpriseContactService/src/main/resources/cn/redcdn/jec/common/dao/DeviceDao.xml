@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.common.dao.DeviceDao">
+    <resultMap type="cn.redcdn.jec.common.entity.Device" id="deviceMap">
+        <!-- 表ID -->
+        <id column="id" property="id"/>
+        <!-- 表group_id -->
+        <id column="group_id" property="groupId"/>
+        <!-- 组名 -->
+        <result column="name" property="name"/>
+        <!-- 账号：序列号/手机号/邮箱 -->
+        <result column="account" property="account"/>
+        <!-- 账号类型 -->
+        <result column="account_type" property="accountType"/>
+        <!-- 视讯号 -->
+        <result column="nube" property="nube"/>
+        <!-- 一级组id -->
+        <result column="first_group" property="firstGroup"/>
+        <!-- 二级组id -->
+        <result column="second_group" property="secondGroup"/>
+        <!-- 三级组id -->
+        <result column="third_group" property="thirdGroup"/>
+        <!-- 中控标识 -->
+        <result column="control_flg" property="controlFlg"/>
+        <!-- 中控视讯号 -->
+        <result column="control_nube" property="controlNube"/>
+        <!-- 导入者 -->
+        <result column="importer" property="importer"/>
+        <!-- 创建者 -->
+        <result column="creator" property="creator"/>
+        <!-- 创建时间 -->
+        <result column="create_time" property="createTime"/>
+        <!-- 更新时间 -->
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 将数据插入数据库中 -->
+    <insert id="insert" parameterType="cn.redcdn.jec.common.entity.Device">
+        INSERT INTO
+        device (
+        id,
+        group_id,
+        name,
+        account,
+        account_type,
+        nube,
+        first_group,
+        second_group,
+        third_group,
+        control_flg,
+        control_nube,
+        importer,
+        creator,
+        create_time,
+        update_time)
+        VALUES (
+        #{id},
+        #{groupId},
+        #{name},
+        #{account},
+        #{accountType},
+        #{nube},
+        #{firstGroup},
+        #{secondGroup},
+        #{thirdGroup},
+        #{controlFlg},
+        #{controlNube},
+        #{importer},
+        #{creator},
+        #{createTime},
+        #{updateTime})
+    </insert>
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="queryByKey" resultMap="deviceMap">
+        SELECT
+        *
+        FROM
+        device
+        <where>
+            id = #{id}
+        </where>
+    </select>
+
+    <!-- 根据key更新数据库中信息 -->
+    <update id="updateByKey">
+        Update
+        device
+        <set>
+            <if test="groupId!=null">
+                group_id=#{groupId},
+            </if>
+            <if test=" name != null ">
+                name = #{name},
+            </if>
+            <if test=" account != null ">
+                account = #{account},
+            </if>
+            <if test=" accountType != null ">
+                account_type = #{accountType},
+            </if>
+            <if test=" nube != null ">
+                nube = #{nube},
+            </if>
+            <if test=" firstGroup != null ">
+                first_group = #{firstGroup},
+            </if>
+            <if test=" secondGroup != null ">
+                second_group = #{secondGroup},
+            </if>
+            <if test=" thirdGroup != null ">
+                third_group = #{thirdGroup},
+            </if>
+            <if test=" controlFlg != null ">
+                control_flg = #{controlFlg},
+            </if>
+            <if test=" controlNube != null ">
+                control_nube = #{controlNube},
+            </if>
+            <if test=" importer != null ">
+                importer = #{importer},
+            </if>
+            <if test=" creator != null ">
+                creator = #{creator},
+            </if>
+            <if test=" createTime != null ">
+                create_time = #{createTime},
+            </if>
+            <if test=" updateTime != null ">
+                update_time = #{updateTime}
+            </if>
+        </set>
+        <where>
+            id = #{id}
+        </where>
+    </update>
+
+    <!-- 根据Key删除数据库中信息 -->
+    <delete id="deleteByKey">
+        DELETE FROM
+        device
+        <where>
+            id = #{id}
+        </where>
+    </delete>
+    <!-- 根据field查找数据库中信息 -->
+    <select id="queryByField" resultMap="deviceMap">
+        SELECT
+        *
+        FROM
+        device
+        <where>
+            ${fieldName} = #{fieldValue}
+        </where>
+    </select>
+
+</mapper>

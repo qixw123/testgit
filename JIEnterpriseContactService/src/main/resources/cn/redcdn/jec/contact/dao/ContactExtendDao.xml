@@ -1,0 +1,616 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.contact.dao.ContactExtendDao">
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listGroupByNubeAndContent" resultType="cn.redcdn.jec.contact.dto.GroupSearchDto">
+        SELECT
+            tg.id   AS groupId,
+            tg.name AS groupName
+        FROM
+            (SELECT g.*
+             FROM ent_contact ec
+                 JOIN device ud ON ec.device_id = ud.id AND
+                                   ud.nube = #{nube} AND ud.control_flg = 2
+                 JOIN group_info g ON ec.contact_group_id = g.id
+             UNION
+             SELECT pg.*
+             FROM ent_contact ec
+                 JOIN device ud ON ec.device_id = ud.id AND
+                                   ud.nube = #{nube} AND ud.control_flg = 2
+                 JOIN group_info g ON ec.contact_group_id = g.id
+                 JOIN group_info pg ON g.parent_id = pg.id
+             UNION
+             SELECT gpg.*
+             FROM ent_contact ec
+                 JOIN device ud ON ec.device_id = ud.id AND
+                                   ud.nube = #{nube} AND ud.control_flg = 2
+                 JOIN group_info g ON ec.contact_group_id = g.id
+                 JOIN group_info pg ON g.parent_id = pg.id
+                 JOIN group_info gpg ON pg.parent_id = gpg.id) tg
+        WHERE tg.name LIKE concat(concat('%', #{content}), '%')
+        ORDER BY
+            tg.sort
+    </select>
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listDeviceByNubeAndContent" resultType="cn.redcdn.jec.contact.dto.DeviceSearchDto">
+        SELECT
+            g.id    gid,
+            g.name  gname,
+            cd.id   cid,
+            cd.name cname
+        FROM
+            ent_contact ec,
+            device ud,
+            device cd,
+            group_info g
+        WHERE
+            ud.nube = #{nube}
+            AND ud.control_flg = 2
+            AND ec.device_id = ud.id
+            AND ec.contact_group_id = cd.group_id
+            AND cd.group_id = g.id
+            AND (cd.name LIKE concat(concat('%', #{content}), '%')
+                 OR cd.nube LIKE concat(concat('%', #{content}), '%'))
+        ORDER BY
+            g.sort, g.id
+    </select>
+
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="countContactsById" resultType="java.lang.Integer">
+        SELECT count(1)
+        FROM
+            ent_contact ec
+        WHERE
+            EXISTS(
+                    SELECT 1
+                    FROM
+                        device cd
+                    WHERE
+                        cd.id = #{id} AND cd.id = ec.device_id
+            )
+
+
+    </select>
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listGroup" resultType="cn.redcdn.jec.contact.dto.ContactGroupNumDto">
+        SELECT
+            tg.id            AS id,
+            tg.name          AS name,
+            tg.level         AS level,
+            tg.parent_id     AS parentId,
+            CASE WHEN tmp.num IS NULL
+                THEN 0
+            ELSE tmp.num END AS num,
+            CASE WHEN chkTmp.id IS NULL
+                THEN 0
+            ELSE 1 END       AS checkFlg
+        FROM
+            group_info tg
+            LEFT JOIN
+            (
+                SELECT
+                    id,
+                    name,
+                    level,
+                    parentId,
+                    sort,
+                    sum(num) AS num
+                FROM
+                    (SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd
+                     WHERE
+                         cd.group_id = fg.id
+                     GROUP BY fg.id
+                     UNION ALL
+                     SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd, group_info sg
+                     WHERE cd.group_id = sg.id
+                           AND sg.parent_id = fg.id
+                     GROUP BY fg.id
+                     UNION ALL
+                     SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd, group_info tg, group_info sg
+                     WHERE cd.group_id = tg.id
+                           AND tg.parent_id = sg.id
+                           AND sg.parent_id = fg.id
+                     GROUP BY fg.id
+                    ) a
+                GROUP BY id
+            ) tmp ON tg.id = tmp.id
+            LEFT JOIN
+            (
+                SELECT ec.contact_group_id AS id
+                FROM
+                    ent_contact ec,
+                    device cd
+                WHERE
+                    cd.id = #{id} AND cd.id = ec.device_id
+            ) chkTmp ON tg.id = chkTmp.id
+            LEFT JOIN
+            group_info sg
+                ON tg.parent_id = sg.id
+            LEFT JOIN
+            group_info fg
+                ON sg.parent_id = fg.id
+        WHERE
+            tg.importer = #{account}
+        ORDER BY
+            fg.level, fg.sort, sg.level, sg.sort, tg.level, tg.sort
+
+    </select>
+
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listGroupDefault" resultType="cn.redcdn.jec.contact.dto.ContactGroupNumDto">
+        SELECT
+            tg.id            AS id,
+            tg.name          AS name,
+            tg.level         AS level,
+            tg.parent_id     AS parentId,
+            CASE WHEN tmp.num IS NULL
+                THEN 0
+            ELSE tmp.num END AS num,
+            CASE WHEN chkTmp.id IS NULL
+                THEN 0
+            ELSE 1 END       AS checkFlg
+        FROM
+            group_info tg LEFT JOIN
+            (
+                SELECT
+                    id,
+                    name,
+                    level,
+                    parentId,
+                    sort,
+                    sum(num) AS num
+                FROM
+                    (SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd
+                     WHERE
+                         cd.group_id = fg.id
+                     GROUP BY fg.id
+                     UNION ALL
+                     SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd, group_info sg
+                     WHERE cd.group_id = sg.id
+                           AND sg.parent_id = fg.id
+                     GROUP BY fg.id
+                     UNION ALL
+                     SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd, group_info tg, group_info sg
+                     WHERE cd.group_id = tg.id
+                           AND tg.parent_id = sg.id
+                           AND sg.parent_id = fg.id
+                     GROUP BY fg.id
+                    ) a
+                GROUP BY id
+            ) tmp ON tg.id = tmp.id
+            LEFT JOIN
+            (
+                SELECT tg.id AS id
+                FROM
+                    device cd,
+                    group_info tg
+                WHERE
+                    cd.id = #{id}
+                    AND ((cd.group_id = tg.id)
+                         OR (cd.group_id = tg.parent_id)
+                         OR (SELECT 1
+                             FROM
+                                 group_info fg
+                             WHERE
+                                 cd.group_id = fg.parent_id
+                                 AND tg.parent_id = fg.id))
+            ) chkTmp ON tg.id = chkTmp.id
+            LEFT JOIN
+            group_info sg
+                ON tg.parent_id = sg.id
+            LEFT JOIN
+            group_info fg
+                ON sg.parent_id = fg.id
+        WHERE
+            tg.importer = #{account}
+        ORDER BY
+            fg.level, fg.sort, sg.level, sg.sort, tg.level, tg.sort
+
+    </select>
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listGroupWithOrg" resultType="cn.redcdn.jec.contact.dto.ContactGroupNumDto">
+        SELECT
+            tg.id            AS id,
+            tg.name          AS name,
+            tg.level         AS level,
+            tg.parent_id     AS parentId,
+            CASE WHEN tmp.num IS NULL
+                THEN 0
+            ELSE tmp.num END AS num,
+            CASE WHEN chkTmp.id IS NULL
+                THEN 0
+            ELSE 1 END       AS checkFlg
+        FROM
+            group_info tg
+            LEFT JOIN
+            (
+                SELECT
+                    id,
+                    name,
+                    level,
+                    parentId,
+                    sort,
+                    sum(num) AS num
+                FROM
+                    (SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd
+                     WHERE
+                         cd.group_id = fg.id
+                     GROUP BY fg.id
+                     UNION ALL
+                     SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd, group_info sg
+                     WHERE cd.group_id = sg.id
+                           AND sg.parent_id = fg.id
+                     GROUP BY fg.id
+                     UNION ALL
+                     SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd, group_info tg, group_info sg
+                     WHERE cd.group_id = tg.id
+                           AND tg.parent_id = sg.id
+                           AND sg.parent_id = fg.id
+                     GROUP BY fg.id
+                    ) a
+                GROUP BY id
+            ) tmp ON tg.id = tmp.id
+            LEFT JOIN
+            (
+                SELECT ec.contact_group_id AS id
+                FROM
+                    ent_contact ec,
+                    device cd
+                WHERE
+                    cd.id = #{id} AND cd.id = ec.device_id
+            ) chkTmp ON tg.id = chkTmp.id
+            LEFT JOIN
+            group_info sg
+                ON tg.parent_id = sg.id
+            LEFT JOIN
+            group_info fg
+                ON sg.parent_id = fg.id
+            ,
+            (SELECT g1.id
+             FROM group_info g1
+             WHERE g1.id = #{groupId}
+             UNION
+             SELECT g2.id
+             FROM group_info g1 LEFT JOIN group_info g2 ON g1.id = g2.parent_id
+             WHERE g1.id = #{groupId}
+             UNION
+             SELECT g3.id
+             FROM group_info g1 LEFT JOIN group_info g2 ON g1.id = g2.parent_id
+                 LEFT JOIN group_info g3 ON g2.id = g3.parent_id
+             WHERE g1.id = #{groupId}) gall
+        WHERE
+            tg.id = gall.id
+        ORDER BY
+            fg.level, fg.sort, sg.level, sg.sort, tg.level, tg.sort
+
+    </select>
+
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listGroupDefaultWithOrg" resultType="cn.redcdn.jec.contact.dto.ContactGroupNumDto">
+        SELECT
+            tg.id            AS id,
+            tg.name          AS name,
+            tg.level         AS level,
+            tg.parent_id     AS parentId,
+            CASE WHEN tmp.num IS NULL
+                THEN 0
+            ELSE tmp.num END AS num,
+            CASE WHEN chkTmp.id IS NULL
+                THEN 0
+            ELSE 1 END       AS checkFlg
+        FROM
+            group_info tg LEFT JOIN
+            (
+                SELECT
+                    id,
+                    name,
+                    level,
+                    parentId,
+                    sort,
+                    sum(num) AS num
+                FROM
+                    (SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd
+                     WHERE
+                         cd.group_id = fg.id
+                     GROUP BY fg.id
+                     UNION ALL
+                     SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd, group_info sg
+                     WHERE cd.group_id = sg.id
+                           AND sg.parent_id = fg.id
+                     GROUP BY fg.id
+                     UNION ALL
+                     SELECT
+                         fg.id        AS id,
+                         fg.name      AS name,
+                         fg.level     AS level,
+                         fg.parent_id AS parentId,
+                         fg.sort      AS sort,
+                         count(1)     AS num
+                     FROM group_info fg, device cd, group_info tg, group_info sg
+                     WHERE cd.group_id = tg.id
+                           AND tg.parent_id = sg.id
+                           AND sg.parent_id = fg.id
+                     GROUP BY fg.id
+                    ) a
+                GROUP BY id
+            ) tmp ON tg.id = tmp.id
+            LEFT JOIN
+            (
+                SELECT tg.id AS id
+                FROM
+                    device cd,
+                    group_info tg
+                WHERE
+                    cd.id = #{id}
+                    AND ((cd.group_id = tg.id)
+                         OR (cd.group_id = tg.parent_id)
+                         OR (SELECT 1
+                             FROM
+                                 group_info fg
+                             WHERE
+                                 cd.group_id = fg.parent_id
+                                 AND tg.parent_id = fg.id))
+            ) chkTmp ON tg.id = chkTmp.id
+            LEFT JOIN
+            group_info sg
+                ON tg.parent_id = sg.id
+            LEFT JOIN
+            group_info fg
+                ON sg.parent_id = fg.id
+            ,
+            (SELECT g1.id
+             FROM group_info g1
+             WHERE g1.id = #{groupId}
+             UNION
+             SELECT g2.id
+             FROM group_info g1 LEFT JOIN group_info g2 ON g1.id = g2.parent_id
+             WHERE g1.id = #{groupId}
+             UNION
+             SELECT g3.id
+             FROM group_info g1 LEFT JOIN group_info g2 ON g1.id = g2.parent_id
+                 LEFT JOIN group_info g3 ON g2.id = g3.parent_id
+             WHERE g1.id = #{groupId}) gall
+        WHERE
+            tg.id = gall.id
+        ORDER BY
+            fg.level, fg.sort, sg.level, sg.sort, tg.level, tg.sort
+
+    </select>
+
+    <!-- 根据Key删除数据库中信息 -->
+    <delete id="deleteById">
+        DELETE FROM
+        ent_contact
+        <where>
+            device_id = #{id}
+        </where>
+    </delete>
+
+    <insert id="insertBatch">
+        INSERT INTO
+        ent_contact (
+        id,
+        device_id,
+        contact_group_id,
+        creator,
+        create_time,
+        update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id},
+            #{item.deviceId},
+            #{item.contactGroupId},
+            #{item.creator},
+            #{item.createTime},
+            #{item.updateTime})
+        </foreach>
+    </insert>
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listDeafultGroupByNubeAndContent" resultType="cn.redcdn.jec.contact.dto.GroupSearchDto">
+        SELECT
+        tmp.id as groupId,
+        tmp.name as groupName
+        FROM
+        (
+
+        <!-- 查询二级级组织下算到二级用户汇总用户 -->
+        SELECT
+        sg.id as id,
+        sg.name as name,
+        sg.level as level,
+        sg.sort as sort
+        FROM
+        device cd,
+        group_info sg
+        <where>
+            cd.nube = #{nube}
+            AND cd.group_id = sg.parent_id
+            AND sg.name LIKE concat(concat('%',#{content}),'%')
+        </where>
+
+        UNION ALL
+        <!-- 查询三级级级组织下算到二级用户汇总用户 -->
+        SELECT
+        tg.id as id,
+        tg.name as name,
+        tg.level as level,
+        tg.sort as sort
+        FROM
+        device cd,
+        group_info sg,
+        group_info tg
+        <where>
+            cd.nube = #{nube}
+            AND cd.group_id = sg.parent_id
+            AND sg.id = tg.parent_id
+            AND tg.name LIKE concat(concat('%',#{content}),'%')
+        </where>
+        ) tmp
+        ORDER BY
+        tmp.level, tmp.sort
+    </select>
+
+    <!-- 根据key查找数据库中信息 -->
+    <select id="listDeafulteByNubeAndContent" resultType="cn.redcdn.jec.contact.dto.DeviceSearchDto">
+        SELECT
+        tmp.gid as gid,
+        tmp.gname as gname,
+        tmp.cid as cid,
+        tmp.cname as cname
+        FROM
+        (
+        <!-- 查询二级级组织下算到二级用户汇总用户 -->
+        SELECT
+        fg.id gid,
+        fg.name gname,
+        ud.id cid,
+        ud.name cname,
+        fg.level as level,
+        fg.sort as sort
+        FROM
+        device cd,
+        device ud,
+        group_info fg
+        <where>
+            cd.nube = #{nube}
+            AND cd.group_id = ud.group_id
+            AND ud.group_id = fg.id
+            AND (ud.name LIKE concat(concat('%',#{content}),'%')
+            OR ud.nube LIKE concat(concat('%',#{content}),'%'))
+        </where>
+
+        UNION ALL
+        <!-- 查询二级级组织下算到二级用户汇总用户 -->
+        SELECT
+        sg.id gid,
+        sg.name gname,
+        ud.id cid,
+        ud.name cname,
+        sg.level as level,
+        sg.sort as sort
+        FROM
+        device cd,
+        device ud,
+        group_info sg
+        <where>
+            cd.nube = #{nube}
+            AND cd.group_id = sg.parent_id
+            AND ud.group_id = sg.id
+            AND (ud.name LIKE concat(concat('%',#{content}),'%')
+            OR ud.nube LIKE concat(concat('%',#{content}),'%'))
+        </where>
+
+        UNION ALL
+
+        <!-- 查询三级组织下算到二级用户汇总用户 -->
+        SELECT
+        tg.id gid,
+        tg.name gname,
+        ud.id cid,
+        ud.name cname,
+        tg.level as level,
+        tg.sort as sort
+        FROM
+        device cd,
+        device ud,
+        group_info sg,
+        group_info tg
+        <where>
+            cd.nube = #{nube}
+            AND cd.group_id = sg.parent_id
+            AND tg.parent_id = sg.id
+            AND ud.group_id = tg.id
+            AND (ud.name LIKE concat(concat('%',#{content}),'%')
+            OR ud.nube LIKE concat(concat('%',#{content}),'%'))
+        </where>
+        ) tmp
+        ORDER BY
+        tmp.level, tmp.sort
+    </select>
+</mapper>

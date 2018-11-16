@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.redcdn.jec.org.dao.OrganizeAccountExtDao">
+
+    <!-- 根据用户查找数据库中信息 -->
+    <select id="selectGroupInfoByAccount" resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+        SELECT
+        g.*
+        FROM
+        group_info g JOIN organize_account o
+        on o.contact_group_id=g.id
+        <where>
+            o.account = #{account}
+        </where>
+    </select>
+
+    <select id="selectInfoByAccount" resultMap="cn.redcdn.jec.common.dao.OrganizeAccountDao.organizeAccountMap">
+        SELECT * FROM organize_account
+        <where>
+            account=#{account}
+        </where>
+    </select>
+
+    <!--根据账号获取机构管理员基本信息-->
+    <select id="selectOrgAdminBaseInfoByAccount" resultType="cn.redcdn.jec.org.dto.OrgAdminInfoDto">
+        SELECT
+        o.account AS account,
+        g.name as org,
+        o.creator AS creator,
+        o.create_time AS time
+        FROM organize_account o JOIN group_info g ON o.contact_group_id=g.id
+        <where>
+            o.account=#{account}
+        </where>
+    </select>
+
+    <!--根据账户查找管理员信息-->
+    <select id="selectAdminBaseInfoByAccount" resultType="cn.redcdn.jec.org.dto.OrgAdminInfoDto">
+        SELECT
+        s.account AS account,
+        s.name as org
+        FROM system_admin s
+        <where>
+            s.account=#{account}
+        </where>
+    </select>
+
+    <select id="selectInfoByAccountList" resultType="cn.redcdn.jec.org.dto.AdminListDto">
+        SELECT
+        o.id AS id,
+        o.account AS account,
+        o.contact_group_id AS contact,
+        o.creator AS creator,
+        o.create_time AS time
+        FROM organize_account o
+        <where>
+            o.contact_group_id IN
+            <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+
+            <if test="account != null and account != ''">
+                ANd account = #{account}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectAdminListByCurrentUserId" resultType="cn.redcdn.jec.org.dto.AdminListDto">
+        SELECT
+        o.id AS id,
+        o.account AS account,
+        concat_ws('-', o.first_group, o.second_group, o.third_group) AS org,
+        g.id AS contact,
+        g.level AS level,
+        o.creator AS creator,
+        o.create_time AS time
+
+        FROM organize_account o
+        JOIN
+        ((SELECT
+        g.id AS id,
+        g.level AS level
+        FROM group_info g, organize_account o
+        WHERE g.id = o.contact_group_id AND o.id IN
+        <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+            #{item}
+        </foreach>)
+        UNION (
+        SELECT
+        g2.id AS id,
+        g2.level AS LEVEL
+        FROM group_info g2, organize_account o
+        WHERE g2.parent_id = o.contact_group_id AND o.id IN
+        <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+            #{item}
+        </foreach>)
+        UNION (
+        SELECT
+        g3.id AS id,
+        g3.level AS LEVEL
+        FROM group_info g3
+        JOIN (SELECT g2.id AS id
+        FROM group_info g2, organize_account o
+        WHERE o.contact_group_id = g2.parent_id AND o.id IN
+        <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+            #{item}
+        </foreach>) AS s ON g3.parent_id = s.id)) g
+        <where>
+            o.contact_group_id = g.id
+            <if test="account!=null">
+                AND o.account=#{account}
+            </if>
+            <if test="org!=null">
+                AND concat_ws('-', o.first_group, o.second_group, o.third_group) LIKE concat(concat('%',#{org}),'%')
+            </if>
+        </where>
+        ORDER BY
+        org,g.level
+    </select>
+
+    <!-- 批量删除-->
+    <delete id="deleteByAccountsLits">
+        DELETE FROM organize_account
+        <where>
+            account IN
+            <foreach collection="accounts" item="item" index="index" open="(" close=")" separator=",">
+                #{item}
+            </foreach>
+        </where>
+    </delete>
+
+    <select id="getGroupLevelNameById" resultType="cn.redcdn.jec.org.dto.GroupLevelDto">
+        SELECT
+        g3.name AS first,
+        g2.name AS second,
+        g1.name AS third
+        FROM group_info g1
+        LEFT JOIN group_info g2 ON g1.parent_id = g2.id
+        LEFT JOIN group_info g3 ON g3.id = g2.parent_id
+        <where>
+            g1.id = #{id}
+        </where>
+    </select>
+
+    <select id="getGroupInfo" resultMap="cn.redcdn.jec.common.dao.GroupInfoDao.groupInfoMap">
+        SELECT *
+        FROM group_info g
+        <where>
+            <if test="id!=null and id!=''">
+                g.parent_id=#{id}
+            </if>
+            <if test="importer!=null and importer!=''">
+                AND g.importer=#{importer}
+            </if>
+            <if test="level!=null and level!=''">
+                AND g.level=#{level}
+            </if>
+        </where>
+    </select>
+
+    <update id="updateByGroupIdBatch">
+        <foreach collection="list" item="item" separator=";">
+            Update
+            organize_account
+            <set>
+                <if test=" level == 1 ">
+                    first_group = #{name},
+                </if>
+                <if test=" level == 2 ">
+                    second_group = #{name},
+                </if>
+                <if test=" level == 3 ">
+                    third_group = #{name},
+                </if>
+            </set>
+            <where>
+                contact_group_id = #{item}
+            </where>
+        </foreach>
+    </update>
+
+    <select id="selectCurrentOrgAdmin" resultMap="cn.redcdn.jec.common.dao.OrganizeAccountDao.organizeAccountMap">
+        SELECT
+        *
+        FROM
+        organize_account
+        <where>
+            contact_group_id = #{groupId}
+        </where>
+        ORDER BY
+        first_group,second_group,third_group
+    </select>
+</mapper>
